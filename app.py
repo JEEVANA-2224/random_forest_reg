@@ -42,16 +42,26 @@ def user_input_features():
 input_df = user_input_features()
 
 # ---------------- Align Columns ----------------
+# Get expected columns from trained pipeline
 expected_cols = pipeline.named_steps['preprocess'].feature_names_in_
+
+# Determine which are categorical and numeric columns from training data
+# (You may hardcode these if X is not accessible in this app)
+categorical_cols = ['house_type', 'location', 'condition']  # replace with your categorical columns
+numeric_cols = ['year_built', 'lot_size', 'sqft', 'has_pool', 'garage', 'has_basement', 'school_rating', 'has_fireplace']  # numeric columns
+
+# Fill missing columns safely
 for col in expected_cols:
     if col not in input_df.columns:
-        # Fill numeric missing columns with 0, categorical with empty string
-        if col in input_df.select_dtypes(include=["int64","float64"]).columns:
+        if col in numeric_cols:
             input_df[col] = 0
-        else:
-            input_df[col] = ''
+        elif col in categorical_cols:
+            input_df[col] = 'Unknown'  # use a default valid category
 
 # ---------------- Prediction ----------------
 if st.button("Predict Price"):
-    prediction = pipeline.predict(input_df)[0]
-    st.success(f"🏷 Predicted House Price: ₹{prediction:,.2f}")
+    try:
+        prediction = pipeline.predict(input_df)[0]
+        st.success(f"🏷 Predicted House Price: ₹{prediction:,.2f}")
+    except Exception as e:
+        st.error(f"Prediction failed: {e}")
